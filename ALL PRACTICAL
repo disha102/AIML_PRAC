@@ -1,0 +1,1009 @@
+practical_01_smart_home_agent.py
+python
+# Practical 1: Simple Intelligent Agent (Smart Home Controller)
+
+
+def smart_home_agent(temperature, light_intensity, person_present):
+    # Fan turns ON when it is hotter than 28 C
+    if temperature > 28:
+        fan = "ON"
+    else:
+        fan = "OFF"
+
+    # Light turns ON only if a person is present and it is dark enough
+    if person_present and light_intensity < 40:
+        light = "ON"
+    else:
+        light = "OFF"
+
+    return fan, light
+
+
+def main():
+    print("SMART HOME AGENT")
+    print("----------------")
+
+    temperature = float(input("Enter room temperature (C): "))
+    light_intensity = float(input("Enter light intensity (0-100): "))
+    presence = input("Is a person present? (yes/no): ").strip().lower()
+
+    if light_intensity < 0 or light_intensity > 100:
+        print("Light intensity must be between 0 and 100")
+        return
+
+    person_present = (presence == "yes")
+    fan, light = smart_home_agent(temperature, light_intensity, person_present)
+
+    print("\nTemperature:", temperature, "C")
+    print("Light intensity:", light_intensity, "%")
+    print("Person present:", person_present)
+    print("Fan:", fan)
+    print("Light:", light)
+
+
+if __name__ == "__main__":
+    main()
+practical_02_bfs_dfs.py
+python
+# Practical 2: Uninformed Search - Breadth First Search (BFS) and Depth First Search (DFS)
+from collections import deque
+import time
+
+graph = {
+    'A': ['B', 'C'],
+    'B': ['D', 'E'],
+    'C': ['F', 'G'],
+    'D': ['H', 'I'],
+    'E': ['J'],
+    'F': [],
+    'G': [],
+    'H': [],
+    'I': [],
+    'J': []
+}
+
+
+def bfs(graph, start, goal):
+    queue = deque([(start, [start])])
+    visited = set()
+    explored = []
+
+    while queue:
+        node, path = queue.popleft()
+        if node in visited:
+            continue
+        visited.add(node)
+        explored.append(node)
+
+        if node == goal:
+            return path, explored
+
+        for neighbour in graph[node]:
+            if neighbour not in visited:
+                queue.append((neighbour, path + [neighbour]))
+
+    return None, explored
+
+
+def dfs(graph, start, goal):
+    stack = [(start, [start])]
+    visited = set()
+    explored = []
+
+    while stack:
+        node, path = stack.pop()
+        if node in visited:
+            continue
+        visited.add(node)
+        explored.append(node)
+
+        if node == goal:
+            return path, explored
+
+        # reversed so the left child is explored first
+        for neighbour in reversed(graph[node]):
+            if neighbour not in visited:
+                stack.append((neighbour, path + [neighbour]))
+
+    return None, explored
+
+
+def main():
+    start, goal = 'A', 'J'
+
+    t1 = time.perf_counter()
+    bfs_path, bfs_explored = bfs(graph, start, goal)
+    bfs_time = time.perf_counter() - t1
+
+    t2 = time.perf_counter()
+    dfs_path, dfs_explored = dfs(graph, start, goal)
+    dfs_time = time.perf_counter() - t2
+
+    print("===== BFS RESULT =====")
+    print("Traversal:", " -> ".join(bfs_explored))
+    print("Path:", " -> ".join(bfs_path))
+    print("Path length:", len(bfs_path) - 1)
+    print("Nodes explored:", len(bfs_explored))
+    print("Execution time:", bfs_time, "seconds")
+
+    print("\n===== DFS RESULT =====")
+    print("Traversal:", " -> ".join(dfs_explored))
+    print("Path:", " -> ".join(dfs_path))
+    print("Path length:", len(dfs_path) - 1)
+    print("Nodes explored:", len(dfs_explored))
+    print("Execution time:", dfs_time, "seconds")
+
+
+if __name__ == "__main__":
+    main()
+practical_03_greedy_astar.py
+python
+# Practical 3: Informed Search - Greedy Best-First Search and A* Search
+import heapq
+
+graph = {
+    'S': [('A', 3), ('B', 2)],
+    'A': [('C', 4), ('D', 1)],
+    'B': [('E', 3), ('F', 1)],
+    'E': [('H', 5)],
+    'F': [('I', 2), ('G', 3)],
+    'C': [],
+    'D': [],
+    'H': [],
+    'I': [],
+    'G': []
+}
+
+heuristic = {
+    'S': 13, 'A': 12, 'B': 4, 'C': 7, 'D': 3,
+    'E': 8, 'F': 2, 'H': 4, 'I': 9, 'G': 0
+}
+
+
+def build_path(parent, goal):
+    path = []
+    node = goal
+    while node is not None:
+        path.append(node)
+        node = parent[node]
+    path.reverse()
+    return path
+
+
+def greedy_search(graph, heuristic, start, goal):
+    # Priority = heuristic only: f(n) = h(n)
+    queue = [(heuristic[start], start)]
+    parent = {start: None}
+    visited = set()
+
+    while queue:
+        _, node = heapq.heappop(queue)
+        if node in visited:
+            continue
+        visited.add(node)
+        print("Greedy expanded:", node, "h =", heuristic[node])
+
+        if node == goal:
+            return build_path(parent, goal)
+
+        for neighbour, _cost in graph[node]:
+            if neighbour not in visited:
+                parent[neighbour] = node
+                heapq.heappush(queue, (heuristic[neighbour], neighbour))
+
+    return None
+
+
+def a_star(graph, heuristic, start, goal):
+    # Priority = g + h: f(n) = g(n) + h(n)
+    queue = [(heuristic[start], start)]
+    g = {start: 0}
+    parent = {start: None}
+    visited = set()
+
+    while queue:
+        f, node = heapq.heappop(queue)
+        if node in visited:
+            continue
+        visited.add(node)
+        print("A* expanded:", node, "g =", g[node],
+              "h =", heuristic[node], "f =", g[node] + heuristic[node])
+
+        if node == goal:
+            return build_path(parent, goal), g[goal]
+
+        for neighbour, cost in graph[node]:
+            new_g = g[node] + cost
+            if neighbour not in g or new_g < g[neighbour]:
+                g[neighbour] = new_g
+                parent[neighbour] = node
+                heapq.heappush(queue, (new_g + heuristic[neighbour], neighbour))
+
+    return None, None
+
+
+def main():
+    print("--- Greedy Best-First Search ---")
+    greedy_path = greedy_search(graph, heuristic, 'S', 'G')
+    print("Greedy path:", greedy_path)
+
+    print("\n--- A* Search ---")
+    astar_path, astar_cost = a_star(graph, heuristic, 'S', 'G')
+    print("A* path:", astar_path)
+    print("A* cost:", astar_cost)
+
+
+if __name__ == "__main__":
+    main()
+practical_04_expert_system.py
+python
+# Practical 4: Rule-Based Expert System using Propositional Logic
+# Forward Chaining (data-driven) and Backward Chaining (goal-driven)
+
+rules = [
+    ({"fever", "cough"}, "respiratory_infection"),
+    ({"respiratory_infection", "body_pain"}, "flu"),
+    ({"fever", "rash"}, "measles"),
+    ({"flu"}, "viral_infection"),
+    ({"viral_infection"}, "rest_and_hydration"),
+]
+
+
+def forward_chaining(facts, rules):
+    facts = set(facts)
+    new_fact_added = True
+
+    while new_fact_added:
+        new_fact_added = False
+        for conditions, conclusion in rules:
+            if conditions.issubset(facts) and conclusion not in facts:
+                facts.add(conclusion)
+                print("Rule fired:", " AND ".join(sorted(conditions)), "->", conclusion)
+                new_fact_added = True
+
+    return facts
+
+
+def backward_chaining(goal, facts, rules, visited=None):
+    if visited is None:
+        visited = set()
+
+    if goal in facts:
+        print("Fact found:", goal)
+        return True
+
+    if goal in visited:
+        return False
+    visited.add(goal)
+
+    print("Checking goal:", goal)
+    for conditions, conclusion in rules:
+        if conclusion == goal:
+            if all(backward_chaining(c, facts, rules, visited) for c in conditions):
+                print("Goal proved:", goal)
+                return True
+
+    return False
+
+
+def main():
+    user_input = input("Enter facts separated by comma: ")
+    facts = {f.strip() for f in user_input.split(",") if f.strip()}
+    goal = input("Enter the goal to verify: ").strip()
+
+    print("\n--- Forward Chaining ---")
+    final_facts = forward_chaining(facts, rules)
+    print("Final knowledge base:", sorted(final_facts))
+
+    print("\n--- Backward Chaining ---")
+    if backward_chaining(goal, facts, rules):
+        print("Result: goal", goal, "CAN be proved")
+    else:
+        print("Result: goal", goal, "cannot be proved from the given facts")
+
+
+if __name__ == "__main__":
+    main()
+practical_05_eda_heart_disease.py
+python
+# Practical 5: Data Preprocessing and Exploratory Data Analysis
+# Dataset: UCI Heart Disease (Cleveland). Needs internet access.
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+
+sns.set_theme(style="whitegrid")
+
+URL = ("https://archive.ics.uci.edu/ml/machine-learning-databases/"
+       "heart-disease/processed.cleveland.data")
+
+COLUMNS = ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg",
+           "thalach", "exang", "oldpeak", "slope", "ca", "thal", "num"]
+
+NUMERIC_FEATURES = ["age", "trestbps", "chol", "thalach", "oldpeak"]
+CATEGORICAL_FEATURES = ["sex", "cp", "fbs", "restecg", "exang", "slope", "ca", "thal"]
+
+
+def load_data():
+    df = pd.read_csv(URL, names=COLUMNS, na_values="?")
+    df = df.apply(pd.to_numeric, errors="coerce")
+    return df
+
+
+def clean_data(df):
+    print("Duplicate rows:", df.duplicated().sum())
+    df = df.drop_duplicates().copy()
+
+    # binary target: 0 = no heart disease, 1 = heart disease present
+    df["target"] = (df["num"] > 0).astype(int)
+    df = df.drop(columns=["num"])
+    return df
+
+
+def run_eda(df):
+    print("\nDescriptive statistics:")
+    print(df[NUMERIC_FEATURES].describe().round(2))
+
+    print("\nMedian values:")
+    print(df[NUMERIC_FEATURES].median())
+
+    print("\nTarget counts:")
+    print(df["target"].value_counts())
+
+    df[NUMERIC_FEATURES].hist(bins=15, figsize=(12, 8), edgecolor="black")
+    plt.suptitle("Histograms of Numerical Features")
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(12, 6))
+    sns.boxplot(data=df[NUMERIC_FEATURES], orient="h")
+    plt.title("Boxplots of Numerical Features")
+    plt.tight_layout()
+    plt.show()
+
+    plt.figure(figsize=(6, 4))
+    sns.countplot(x="target", data=df)
+    plt.title("Heart Disease Target Distribution")
+    plt.xlabel("Target (0 = no disease, 1 = disease)")
+    plt.tight_layout()
+    plt.show()
+
+
+def preprocess(df):
+    X = df.drop(columns=["target"])
+    y = df["target"]
+
+    # split BEFORE fitting imputers and scalers to avoid data leakage
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.20, random_state=42, stratify=y)
+
+    numeric_pipeline = Pipeline([
+        ("imputer", SimpleImputer(strategy="median")),
+        ("scaler", StandardScaler()),
+    ])
+
+    categorical_pipeline = Pipeline([
+        ("imputer", SimpleImputer(strategy="most_frequent")),
+        ("encoder", OneHotEncoder(handle_unknown="ignore")),
+    ])
+
+    preprocessor = ColumnTransformer([
+        ("num", numeric_pipeline, NUMERIC_FEATURES),
+        ("cat", categorical_pipeline, CATEGORICAL_FEATURES),
+    ])
+
+    X_train_processed = preprocessor.fit_transform(X_train)
+    X_test_processed = preprocessor.transform(X_test)
+
+    print("\nTraining records:", X_train_processed.shape[0])
+    print("Testing records:", X_test_processed.shape[0])
+    print("Features after preprocessing:", X_train_processed.shape[1])
+    return X_train_processed, X_test_processed, y_train, y_test
+
+
+def main():
+    df = load_data()
+    print("First five rows:")
+    print(df.head())
+    print("\nShape:", df.shape)
+    print("\nMissing values per column:")
+    print(df.isnull().sum())
+
+    df = clean_data(df)
+    run_eda(df)
+    preprocess(df)
+
+
+if __name__ == "__main__":
+    main()
+practical_06_linear_polynomial_regression.py
+python
+# Practical 6: Linear Regression and Polynomial Regression
+# Dataset: California Housing (downloaded by scikit-learn on first run)
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+
+def main():
+    housing = fetch_california_housing(as_frame=True)
+    X = housing.data
+    y = housing.target
+
+    print("First five records:")
+    print(X.head())
+    print("\nShape:", X.shape)
+    print("Missing values:", X.isnull().sum().sum())
+
+    plt.figure(figsize=(8, 5))
+    plt.scatter(X["MedInc"], y, alpha=0.25, s=10)
+    plt.xlabel("Median Income")
+    plt.ylabel("Median House Value ($100,000 units)")
+    plt.title("Median Income vs House Value")
+    plt.show()
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.20, random_state=42)
+    print("Training records:", len(X_train))
+    print("Testing records:", len(X_test))
+
+    # Linear Regression
+    lin_model = LinearRegression()
+    lin_model.fit(X_train, y_train)
+    y_pred_lin = lin_model.predict(X_test)
+
+    # Polynomial Regression (degree 2)
+    poly_model = Pipeline([
+        ("poly", PolynomialFeatures(degree=2, include_bias=False)),
+        ("scaler", StandardScaler()),
+        ("regression", LinearRegression()),
+    ])
+    poly_model.fit(X_train, y_train)
+    y_pred_poly = poly_model.predict(X_test)
+
+    results = pd.DataFrame({
+        "Model": ["Linear Regression", "Polynomial Regression"],
+        "MSE": [mean_squared_error(y_test, y_pred_lin),
+                mean_squared_error(y_test, y_pred_poly)],
+        "MAE": [mean_absolute_error(y_test, y_pred_lin),
+                mean_absolute_error(y_test, y_pred_poly)],
+        "R2 Score": [r2_score(y_test, y_pred_lin),
+                     r2_score(y_test, y_pred_poly)],
+    })
+    print("\nModel comparison")
+    print(results.round(4).to_string(index=False))
+
+    # Actual vs predicted
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    for ax, name, pred in zip(axes,
+                              ["Linear Regression", "Polynomial Regression"],
+                              [y_pred_lin, y_pred_poly]):
+        ax.scatter(y_test, pred, alpha=0.25, s=10)
+        low = min(y_test.min(), pred.min())
+        high = max(y_test.max(), pred.max())
+        ax.plot([low, high], [low, high], "r--")
+        ax.set_title(name)
+        ax.set_xlabel("Actual value")
+        ax.set_ylabel("Predicted value")
+    plt.tight_layout()
+    plt.show()
+
+    # Residual plot
+    residual_lin = y_test.to_numpy() - y_pred_lin
+    residual_poly = y_test.to_numpy() - y_pred_poly
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    axes[0].scatter(y_pred_lin, residual_lin, alpha=0.25, s=10)
+    axes[0].axhline(0, linestyle="--")
+    axes[0].set_title("Linear Regression Residuals")
+    axes[0].set_xlabel("Predicted value")
+    axes[0].set_ylabel("Residual")
+    axes[1].scatter(y_pred_poly, residual_poly, alpha=0.25, s=10)
+    axes[1].axhline(0, linestyle="--")
+    axes[1].set_title("Polynomial Regression Residuals")
+    axes[1].set_xlabel("Predicted value")
+    axes[1].set_ylabel("Residual")
+    plt.tight_layout()
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
+practical_07_logistic_knn.py
+python
+# Practical 7: Data Preprocessing, Logistic Regression and KNN
+# Dataset: Iris
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                             f1_score, confusion_matrix, classification_report)
+
+
+def show_scores(name, y_true, y_pred, target_names):
+    print("\n" + name)
+    print("-" * 40)
+    print("Accuracy :", round(accuracy_score(y_true, y_pred), 4))
+    print("Precision:", round(precision_score(y_true, y_pred, average="weighted"), 4))
+    print("Recall   :", round(recall_score(y_true, y_pred, average="weighted"), 4))
+    print("F1-Score :", round(f1_score(y_true, y_pred, average="weighted"), 4))
+    print(classification_report(y_true, y_pred, target_names=target_names))
+
+
+def main():
+    iris = load_iris()
+    X = pd.DataFrame(iris.data, columns=iris.feature_names)
+    y = iris.target
+
+    print("First five records:")
+    print(X.head())
+    print("\nShape:", X.shape)
+    print("Missing values:", X.isnull().sum().sum())
+
+    species = pd.Series(y).map(dict(enumerate(iris.target_names)))
+    sns.countplot(x=species)
+    plt.title("Number of Samples per Species")
+    plt.show()
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.20, random_state=42, stratify=y)
+    print("\nTraining samples:", len(X_train))
+    print("Testing samples:", len(X_test))
+
+    # scaling is inside the pipeline so it is fitted on training data only
+    lr_model = make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000))
+    knn_model = make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=5))
+
+    lr_model.fit(X_train, y_train)
+    knn_model.fit(X_train, y_train)
+
+    pred_lr = lr_model.predict(X_test)
+    pred_knn = knn_model.predict(X_test)
+
+    show_scores("Logistic Regression", y_test, pred_lr, iris.target_names)
+    show_scores("KNN (k=5)", y_test, pred_knn, iris.target_names)
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+    models_to_plot = [
+        ("Logistic Regression", pred_lr, "Blues"),
+        ("KNN (k=5)", pred_knn, "Greens"),
+    ]
+    for ax, (name, pred, color) in zip(axes, models_to_plot):
+        cm = confusion_matrix(y_test, pred)
+        sns.heatmap(cm, annot=True, fmt="d", cmap=color,
+                    xticklabels=iris.target_names,
+                    yticklabels=iris.target_names, ax=ax)
+        ax.set_title(name)
+        ax.set_xlabel("Predicted species")
+        ax.set_ylabel("Actual species")
+    plt.tight_layout()
+    plt.show()
+
+    results = pd.DataFrame({
+        "Model": ["Logistic Regression", "KNN (k=5)"],
+        "Accuracy": [accuracy_score(y_test, pred_lr), accuracy_score(y_test, pred_knn)],
+        "Precision": [precision_score(y_test, pred_lr, average="weighted"),
+                      precision_score(y_test, pred_knn, average="weighted")],
+        "Recall": [recall_score(y_test, pred_lr, average="weighted"),
+                   recall_score(y_test, pred_knn, average="weighted")],
+        "F1-Score": [f1_score(y_test, pred_lr, average="weighted"),
+                     f1_score(y_test, pred_knn, average="weighted")],
+    })
+    print("\nComparison")
+    print(results.round(4).to_string(index=False))
+
+    results.set_index("Model").plot(kind="bar", figsize=(10, 5), ylim=(0.85, 1.0))
+    plt.title("Logistic Regression vs KNN")
+    plt.ylabel("Score")
+    plt.xticks(rotation=0)
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
+practical_08_decision_tree_naive_bayes.py
+python
+# Practical 8: Decision Tree and Naive Bayes Classifiers
+# Dataset: Iris
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                             f1_score, confusion_matrix,
+                             classification_report, ConfusionMatrixDisplay)
+
+
+def evaluate(name, y_true, y_pred, target_names):
+    print("\n" + "=" * 45)
+    print(name)
+    print("=" * 45)
+    print("Accuracy :", round(accuracy_score(y_true, y_pred), 4))
+    print("Precision:", round(precision_score(y_true, y_pred, average="weighted"), 4))
+    print("Recall   :", round(recall_score(y_true, y_pred, average="weighted"), 4))
+    print("F1-Score :", round(f1_score(y_true, y_pred, average="weighted"), 4))
+    print("\nClassification report:")
+    print(classification_report(y_true, y_pred, target_names=target_names))
+    print("Confusion matrix:")
+    print(confusion_matrix(y_true, y_pred))
+
+
+def main():
+    iris = load_iris()
+    X = pd.DataFrame(iris.data, columns=iris.feature_names)
+    y = pd.Series(iris.target, name="target")
+
+    print("First five records:")
+    print(X.head())
+    print("\nShape:", X.shape)
+    print("Missing values:", X.isnull().sum().sum())
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.20, random_state=42, stratify=y)
+    print("\nTraining shape:", X_train.shape)
+    print("Testing shape:", X_test.shape)
+
+    # Decision Tree (max_depth limits overfitting)
+    dt_model = DecisionTreeClassifier(criterion="gini", max_depth=3, random_state=42)
+    dt_model.fit(X_train, y_train)
+    pred_dt = dt_model.predict(X_test)
+
+    # Gaussian Naive Bayes (for continuous features)
+    nb_model = GaussianNB()
+    nb_model.fit(X_train, y_train)
+    pred_nb = nb_model.predict(X_test)
+
+    evaluate("Decision Tree", y_test, pred_dt, iris.target_names)
+    evaluate("Naive Bayes (Gaussian)", y_test, pred_nb, iris.target_names)
+
+    comparison = pd.DataFrame({
+        "Model": ["Decision Tree", "Naive Bayes"],
+        "Accuracy": [accuracy_score(y_test, pred_dt), accuracy_score(y_test, pred_nb)],
+        "Precision": [precision_score(y_test, pred_dt, average="weighted"),
+                      precision_score(y_test, pred_nb, average="weighted")],
+        "Recall": [recall_score(y_test, pred_dt, average="weighted"),
+                   recall_score(y_test, pred_nb, average="weighted")],
+        "F1-Score": [f1_score(y_test, pred_dt, average="weighted"),
+                     f1_score(y_test, pred_nb, average="weighted")],
+    })
+    print("\nModel comparison")
+    print(comparison.round(4).to_string(index=False))
+
+    ConfusionMatrixDisplay.from_predictions(y_test, pred_dt,
+                                            display_labels=iris.target_names)
+    plt.title("Confusion Matrix - Decision Tree")
+    plt.show()
+
+    ConfusionMatrixDisplay.from_predictions(y_test, pred_nb,
+                                            display_labels=iris.target_names)
+    plt.title("Confusion Matrix - Naive Bayes")
+    plt.show()
+
+    plt.figure(figsize=(15, 8))
+    plot_tree(dt_model, feature_names=iris.feature_names,
+              class_names=iris.target_names, filled=True)
+    plt.title("Decision Tree for Iris Dataset")
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
+practical_09_kmeans_hierarchical.py
+python
+# Practical 9: Clustering - K-Means and Hierarchical Clustering
+# Dataset: Iris (labels are used only for comparison, not for training)
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+from scipy.cluster.hierarchy import linkage, dendrogram
+
+
+def main():
+    iris = load_iris()
+    df = pd.DataFrame(iris.data, columns=iris.feature_names)
+
+    print("First five records:")
+    print(df.head())
+    print("\nShape:", df.shape)
+    print("Missing values:", df.isnull().sum().sum())
+
+    X = StandardScaler().fit_transform(df)
+
+    # Elbow method
+    wcss = []
+    for k in range(1, 11):
+        km = KMeans(n_clusters=k, random_state=42, n_init=10)
+        km.fit(X)
+        wcss.append(km.inertia_)
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(range(1, 11), wcss, marker="o")
+    plt.title("Elbow Method")
+    plt.xlabel("Number of clusters (K)")
+    plt.ylabel("WCSS")
+    plt.grid(True)
+    plt.show()
+
+    # K-Means with K = 3
+    kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+    km_labels = kmeans.fit_predict(X)
+    df["KMeans_Cluster"] = km_labels
+
+    # PCA is used only to draw the 4 features on a 2D plot
+    pca = PCA(n_components=2)
+    X_pca = pca.fit_transform(X)
+
+    plt.figure(figsize=(8, 5))
+    plt.scatter(X_pca[:, 0], X_pca[:, 1], c=km_labels, cmap="viridis", s=50)
+    plt.title("K-Means Clusters (PCA view)")
+    plt.xlabel("PC1")
+    plt.ylabel("PC2")
+    plt.show()
+
+    # Hierarchical clustering (Ward linkage)
+    hc = AgglomerativeClustering(n_clusters=3, linkage="ward")
+    hc_labels = hc.fit_predict(X)
+    df["Hierarchical_Cluster"] = hc_labels
+
+    Z = linkage(X, method="ward")
+    plt.figure(figsize=(12, 6))
+    dendrogram(Z, truncate_mode="lastp", p=30, show_leaf_counts=True)
+    plt.title("Dendrogram")
+    plt.xlabel("Data points / merged groups")
+    plt.ylabel("Ward distance")
+    plt.show()
+
+    plt.figure(figsize=(8, 5))
+    plt.scatter(X_pca[:, 0], X_pca[:, 1], c=hc_labels, cmap="plasma", s=50)
+    plt.title("Hierarchical Clusters (PCA view)")
+    plt.xlabel("PC1")
+    plt.ylabel("PC2")
+    plt.show()
+
+    print("\nK-Means silhouette score:", round(silhouette_score(X, km_labels), 3))
+    print("Hierarchical silhouette score:", round(silhouette_score(X, hc_labels), 3))
+
+    print("\nK-Means cluster means:")
+    print(df.groupby("KMeans_Cluster")[iris.feature_names].mean().round(2))
+    print("\nHierarchical cluster means:")
+    print(df.groupby("Hierarchical_Cluster")[iris.feature_names].mean().round(2))
+
+    print("\nK-Means clusters vs actual species:")
+    print(pd.crosstab(pd.Series(km_labels, name="KMeans cluster"),
+                      pd.Series(iris.target_names[iris.target], name="Actual species")))
+
+
+if __name__ == "__main__":
+    main()
+practical_10_pca_breast_cancer.py
+python
+# Practical 10: Dimensionality Reduction using PCA
+# Dataset: Breast Cancer Wisconsin (Diagnostic), 30 features
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                             f1_score, classification_report,
+                             ConfusionMatrixDisplay)
+
+
+def main():
+    data = load_breast_cancer()
+    X = pd.DataFrame(data.data, columns=data.feature_names)
+    y = data.target
+
+    print("First five rows:")
+    print(X.head())
+    print("\nOriginal shape:", X.shape)
+    print("Class distribution:")
+    print(pd.Series(y).map({0: "Malignant", 1: "Benign"}).value_counts())
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.20, random_state=42, stratify=y)
+
+    # Standardize (fit on training data only)
+    scaler = StandardScaler()
+    X_train_s = scaler.fit_transform(X_train)
+    X_test_s = scaler.transform(X_test)
+
+    # PCA keeping 95% of the training variance
+    pca95 = PCA(n_components=0.95)
+    X_train_pca = pca95.fit_transform(X_train_s)
+    X_test_pca = pca95.transform(X_test_s)
+
+    print("\nFeatures before PCA:", X_train_s.shape[1])
+    print("Components after PCA:", X_train_pca.shape[1])
+    print("Variance kept:", round(pca95.explained_variance_ratio_.sum(), 4))
+
+    # Explained variance graph
+    pca_all = PCA().fit(X_train_s)
+    cumulative = np.cumsum(pca_all.explained_variance_ratio_)
+    n = len(cumulative)
+
+    plt.figure(figsize=(9, 5))
+    plt.bar(range(1, n + 1), pca_all.explained_variance_ratio_,
+            alpha=0.6, label="Individual explained variance")
+    plt.plot(range(1, n + 1), cumulative, marker="o", color="red",
+             label="Cumulative explained variance")
+    plt.axhline(0.95, linestyle="--", label="95% threshold")
+    plt.xlabel("Number of principal components")
+    plt.ylabel("Explained variance ratio")
+    plt.title("PCA Explained Variance")
+    plt.legend()
+    plt.show()
+
+    # 2D visualization
+    pca2 = PCA(n_components=2)
+    pca2.fit(X_train_s)
+    X_all_2d = pca2.transform(scaler.transform(X))
+
+    plt.figure(figsize=(9, 6))
+    for value, name in [(0, "Malignant"), (1, "Benign")]:
+        mask = y == value
+        plt.scatter(X_all_2d[mask, 0], X_all_2d[mask, 1],
+                    label=name, alpha=0.7, s=35)
+    plt.xlabel("Principal Component 1")
+    plt.ylabel("Principal Component 2")
+    plt.title("Breast Cancer Data after PCA")
+    plt.legend()
+    plt.grid(True, alpha=0.3)
+    plt.show()
+
+    # Classification before and after PCA
+    model_orig = LogisticRegression(max_iter=5000)
+    model_orig.fit(X_train_s, y_train)
+    pred_orig = model_orig.predict(X_test_s)
+
+    model_pca = LogisticRegression(max_iter=5000)
+    model_pca.fit(X_train_pca, y_train)
+    pred_pca = model_pca.predict(X_test_pca)
+
+    comparison = pd.DataFrame({
+        "Model": ["Without PCA (30 features)",
+                  f"With PCA ({X_train_pca.shape[1]} components)"],
+        "Accuracy": [accuracy_score(y_test, pred_orig),
+                     accuracy_score(y_test, pred_pca)],
+        "Precision": [precision_score(y_test, pred_orig),
+                      precision_score(y_test, pred_pca)],
+        "Recall": [recall_score(y_test, pred_orig),
+                   recall_score(y_test, pred_pca)],
+        "F1 Score": [f1_score(y_test, pred_orig),
+                     f1_score(y_test, pred_pca)],
+    })
+    print("\nClassification comparison")
+    print(comparison.round(4).to_string(index=False))
+
+    print("\nReport without PCA")
+    print(classification_report(y_test, pred_orig, target_names=data.target_names))
+    print("Report with PCA")
+    print(classification_report(y_test, pred_pca, target_names=data.target_names))
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4))
+    ConfusionMatrixDisplay.from_predictions(
+        y_test, pred_orig, display_labels=data.target_names,
+        cmap="Blues", ax=axes[0], colorbar=False)
+    axes[0].set_title("Without PCA")
+    ConfusionMatrixDisplay.from_predictions(
+        y_test, pred_pca, display_labels=data.target_names,
+        cmap="Greens", ax=axes[1], colorbar=False)
+    axes[1].set_title("With PCA")
+    plt.tight_layout()
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
+practical_11_svm_rf_adaboost_tuning.py
+python
+# Practical 11: SVM, Random Forest and AdaBoost with Cross-Validation and GridSearchCV
+# Dataset: Wine
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import load_wine
+from sklearn.model_selection import (train_test_split, StratifiedKFold,
+                                     cross_val_score, GridSearchCV)
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                             f1_score, classification_report, confusion_matrix)
+
+
+def scores_row(name, stage, y_true, y_pred):
+    return {
+        "Model": name,
+        "Stage": stage,
+        "Accuracy": accuracy_score(y_true, y_pred),
+        "Precision": precision_score(y_true, y_pred, average="weighted"),
+        "Recall": recall_score(y_true, y_pred, average="weighted"),
+        "F1-Score": f1_score(y_true, y_pred, average="weighted"),
+    }
+
+
+def main():
+    wine = load_wine()
+    X = pd.DataFrame(wine.data, columns=wine.feature_names)
+    y = wine.target
+
+    print("Shape:", X.shape)
+    print("Classes:", np.unique(y))
+    print("Missing values:", X.isnull().sum().sum())
+
+    sns.countplot(x=y)
+    plt.title("Wine Class Distribution")
+    plt.show()
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.20, random_state=42, stratify=y)
+    print("Training samples:", len(X_train), "| Testing samples:", len(X_test))
+
+    models = {
+        "SVM": Pipeline([("scaler", StandardScaler()), ("clf", SVC())]),
+        "Random Forest": Pipeline([("clf", RandomForestClassifier(random_state=42))]),
+        "AdaBoost": Pipeline([("clf", AdaBoostClassifier(random_state=42))]),
+    }
+
+    # Before tuning
+    results = []
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        results.append(scores_row(name, "Before", y_test, model.predict(X_test)))
+
+    # 5-fold cross-validation
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    print("\n5-Fold Cross-Validation (accuracy)")
+    for name, model in models.items():
+        scores = cross_val_score(model, X_train, y_train, cv=cv, scoring="accuracy")
+        print(name, "fold scores:", scores.round(4), "mean:", round(scores.mean(), 4))
+
+    # Hyperparameter grids
+    param_grids = {
+        "SVM": {
+            "clf__C": [0.1, 1, 10, 100],
+            "clf__kernel": ["linear", "rbf"],
+            "clf__gamma": ["scale", "auto"],
+        },
+        "Random Forest": {
+            "clf__n_estimators": [50, 100, 200],
+            "clf__max_depth": [None, 5, 10],
+            "clf__min_samples_split": [2, 5],
+        },
+        "AdaBoost": {
+            "clf__n_estimators": [50, 100, 200],
+            "clf__learning_rate": [0.01, 0.1, 1.0],
+        },
+    }
+
+    optimized = {}
+    for name, model in models.items():
+        gs = GridSearchCV(model, param_grids[name], cv=cv,
+                    
