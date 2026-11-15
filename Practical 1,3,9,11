@@ -1,0 +1,359 @@
+Practical 1: Design and Implementation of a Simple Intelligent Agent (Smart Home Controller)
+python
+def smart_home_agent(temperature, light_intensity, person_present):
+    # fan rule
+    if temperature > 28:
+        fan = "ON"
+    else:
+        fan = "OFF"
+
+    # light rule
+    if person_present and light_intensity < 40:
+        light = "ON"
+    else:
+        light = "OFF"
+
+    return fan, light
+
+
+print("SMART HOME AGENT")
+print("----------------")
+
+temperature = float(input("Enter room temperature (C): "))
+light_intensity = float(input("Enter light intensity (0-100): "))
+presence = input("Is a person present? (yes/no): ").strip().lower()
+
+if light_intensity < 0 or light_intensity > 100:
+    print("Light intensity must be between 0 and 100")
+else:
+    person_present = (presence == "yes")
+    fan, light = smart_home_agent(temperature, light_intensity, person_present)
+
+    print("\nTemperature:", temperature, "C")
+    print("Light intensity:", light_intensity, "%")
+    print("Person present:", person_present)
+    print("Fan:", fan)
+    print("Light:", light)
+Practical 3: Greedy Best-First Search and A* Search
+Greedy Best-First Search
+python
+import heapq
+
+graph = {
+    'S': [('A', 3), ('B', 2)],
+    'A': [('C', 4), ('D', 1)],
+    'B': [('E', 3), ('F', 1)],
+    'E': [('H', 5)],
+    'F': [('I', 2), ('G', 3)],
+    'C': [], 'D': [], 'H': [], 'I': [], 'G': []
+}
+
+heuristic = {
+    'S': 13, 'A': 12, 'B': 4, 'C': 7, 'D': 3,
+    'E': 8, 'F': 2, 'H': 4, 'I': 9, 'G': 0
+}
+
+def greedy_search(graph, heuristic, start, goal):
+    queue = [(heuristic[start], start)]
+    parent = {start: None}
+    visited = set()
+
+    while queue:
+        h, node = heapq.heappop(queue)
+        if node in visited:
+            continue
+        visited.add(node)
+        print("Expanded:", node, "h =", heuristic[node])
+
+        if node == goal:
+            break
+
+        for nxt, cost in graph[node]:
+            if nxt not in visited:
+                parent[nxt] = node
+                heapq.heappush(queue, (heuristic[nxt], nxt))
+
+    if goal not in parent:
+        return None
+
+    path = []
+    node = goal
+    while node is not None:
+        path.append(node)
+        node = parent[node]
+    path.reverse()
+    return path
+
+path = greedy_search(graph, heuristic, 'S', 'G')
+print("Greedy path:", path)
+A* Search
+python
+import heapq
+
+graph = {
+    'S': [('A', 3), ('B', 2)],
+    'A': [('C', 4), ('D', 1)],
+    'B': [('E', 3), ('F', 1)],
+    'E': [('H', 5)],
+    'F': [('I', 2), ('G', 3)],
+    'C': [], 'D': [], 'H': [], 'I': [], 'G': []
+}
+
+heuristic = {
+    'S': 13, 'A': 12, 'B': 4, 'C': 7, 'D': 3,
+    'E': 8, 'F': 2, 'H': 4, 'I': 9, 'G': 0
+}
+
+def a_star(graph, heuristic, start, goal):
+    queue = [(heuristic[start], start)]
+    g = {start: 0}
+    parent = {start: None}
+    visited = set()
+
+    while queue:
+        f, node = heapq.heappop(queue)
+        if node in visited:
+            continue
+        visited.add(node)
+        print("Expanded:", node, "g =", g[node], "h =", heuristic[node], "f =", f)
+
+        if node == goal:
+            break
+
+        for nxt, cost in graph[node]:
+            new_g = g[node] + cost
+            if nxt not in g or new_g < g[nxt]:
+                g[nxt] = new_g
+                parent[nxt] = node
+                heapq.heappush(queue, (new_g + heuristic[nxt], nxt))
+
+    if goal not in parent:
+        return None, None
+
+    path = []
+    node = goal
+    while node is not None:
+        path.append(node)
+        node = parent[node]
+    path.reverse()
+    return path, g[goal]
+
+path, cost = a_star(graph, heuristic, 'S', 'G')
+print("A* path:", path)
+print("A* cost:", cost)
+Practical 9: K-Means Clustering and Hierarchical Clustering
+python
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
+from scipy.cluster.hierarchy import linkage, dendrogram
+
+# load data
+iris = load_iris()
+df = pd.DataFrame(iris.data, columns=iris.feature_names)
+print(df.head())
+print("Shape:", df.shape)
+print("Missing values:\n", df.isnull().sum())
+
+# scale features
+scaler = StandardScaler()
+X = scaler.fit_transform(df)
+
+# elbow method
+wcss = []
+for k in range(1, 11):
+    km = KMeans(n_clusters=k, random_state=42, n_init=10)
+    km.fit(X)
+    wcss.append(km.inertia_)
+
+plt.figure(figsize=(8, 5))
+plt.plot(range(1, 11), wcss, marker='o')
+plt.title("Elbow Method")
+plt.xlabel("Number of Clusters (K)")
+plt.ylabel("WCSS")
+plt.grid(True)
+plt.show()
+
+# K-Means with K = 3
+kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+km_labels = kmeans.fit_predict(X)
+df["KMeans_Cluster"] = km_labels
+
+# PCA only for plotting
+pca = PCA(n_components=2)
+X_pca = pca.fit_transform(X)
+
+plt.figure(figsize=(8, 5))
+plt.scatter(X_pca[:, 0], X_pca[:, 1], c=km_labels, cmap="viridis", s=50)
+plt.title("K-Means Clusters (PCA view)")
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.show()
+
+# Hierarchical clustering with Ward linkage
+hc = AgglomerativeClustering(n_clusters=3, linkage="ward")
+hc_labels = hc.fit_predict(X)
+df["Hierarchical_Cluster"] = hc_labels
+
+# dendrogram
+Z = linkage(X, method="ward")
+plt.figure(figsize=(12, 6))
+dendrogram(Z, truncate_mode="lastp", p=30, show_leaf_counts=True)
+plt.title("Dendrogram")
+plt.xlabel("Data points / merged groups")
+plt.ylabel("Ward distance")
+plt.show()
+
+plt.figure(figsize=(8, 5))
+plt.scatter(X_pca[:, 0], X_pca[:, 1], c=hc_labels, cmap="plasma", s=50)
+plt.title("Hierarchical Clusters (PCA view)")
+plt.xlabel("PC1")
+plt.ylabel("PC2")
+plt.show()
+
+# compare using silhouette score
+print("K-Means silhouette:", round(silhouette_score(X, km_labels), 3))
+print("Hierarchical silhouette:", round(silhouette_score(X, hc_labels), 3))
+
+# cluster analysis
+print("\nK-Means cluster means:")
+print(df.groupby("KMeans_Cluster")[iris.feature_names].mean().round(2))
+print("\nHierarchical cluster means:")
+print(df.groupby("Hierarchical_Cluster")[iris.feature_names].mean().round(2))
+
+# compare with real species (only for explanation)
+print(pd.crosstab(pd.Series(km_labels, name="KMeans"),
+                  pd.Series(iris.target_names[iris.target], name="Species")))
+Practical 11: SVM, Random Forest, AdaBoost with Cross-Validation and GridSearchCV
+python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.datasets import load_wine
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score, GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.metrics import (accuracy_score, precision_score, recall_score,
+                             f1_score, classification_report, confusion_matrix)
+
+# load data
+wine = load_wine()
+X = pd.DataFrame(wine.data, columns=wine.feature_names)
+y = wine.target
+print("Shape:", X.shape)
+print("Classes:", np.unique(y))
+print("Missing values:", X.isnull().sum().sum())
+
+# quick look at class counts
+sns.countplot(x=y)
+plt.title("Wine Class Distribution")
+plt.show()
+
+# split: 80% train, 20% test
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42, stratify=y)
+print("Train:", len(X_train), "Test:", len(X_test))
+
+# baseline models
+models = {
+    "SVM": Pipeline([("scaler", StandardScaler()), ("clf", SVC())]),
+    "Random Forest": Pipeline([("clf", RandomForestClassifier(random_state=42))]),
+    "AdaBoost": Pipeline([("clf", AdaBoostClassifier(random_state=42))]),
+}
+
+# before optimization
+results = []
+for name, model in models.items():
+    model.fit(X_train, y_train)
+    pred = model.predict(X_test)
+    results.append({
+        "Model": name,
+        "Stage": "Before",
+        "Accuracy": accuracy_score(y_test, pred),
+        "Precision": precision_score(y_test, pred, average="weighted"),
+        "Recall": recall_score(y_test, pred, average="weighted"),
+        "F1-Score": f1_score(y_test, pred, average="weighted"),
+    })
+
+# 5-fold cross-validation
+cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+print("\n5-Fold Cross-Validation (accuracy)")
+for name, model in models.items():
+    scores = cross_val_score(model, X_train, y_train, cv=cv, scoring="accuracy")
+    print(name, "fold scores:", scores.round(4), "mean:", scores.mean().round(4))
+
+# grid search settings
+param_grids = {
+    "SVM": {
+        "clf__C": [0.1, 1, 10, 100],
+        "clf__kernel": ["linear", "rbf"],
+        "clf__gamma": ["scale", "auto"],
+    },
+    "Random Forest": {
+        "clf__n_estimators": [50, 100, 200],
+        "clf__max_depth": [None, 5, 10],
+        "clf__min_samples_split": [2, 5],
+    },
+    "AdaBoost": {
+        "clf__n_estimators": [50, 100, 200],
+        "clf__learning_rate": [0.01, 0.1, 1.0],
+    },
+}
+
+optimized = {}
+for name, model in models.items():
+    gs = GridSearchCV(model, param_grids[name], cv=cv,
+                      scoring="accuracy", n_jobs=-1)
+    gs.fit(X_train, y_train)
+    optimized[name] = gs.best_estimator_
+    print("\n", name)
+    print("Best parameters:", gs.best_params_)
+    print("Best CV accuracy:", round(gs.best_score_, 4))
+
+# after optimization
+for name, model in optimized.items():
+    pred = model.predict(X_test)
+    results.append({
+        "Model": name,
+        "Stage": "After",
+        "Accuracy": accuracy_score(y_test, pred),
+        "Precision": precision_score(y_test, pred, average="weighted"),
+        "Recall": recall_score(y_test, pred, average="weighted"),
+        "F1-Score": f1_score(y_test, pred, average="weighted"),
+    })
+    print("\nClassification report for optimized", name)
+    print(classification_report(y_test, pred, target_names=wine.target_names))
+
+results_df = pd.DataFrame(results)
+print("\nComparison table")
+print(results_df.round(4).to_string(index=False))
+
+# accuracy bar chart
+acc_pivot = results_df.pivot(index="Model", columns="Stage", values="Accuracy")
+acc_pivot.plot(kind="bar", figsize=(9, 5))
+plt.title("Accuracy Before and After Optimization")
+plt.ylabel("Test Accuracy")
+plt.ylim(0, 1.05)
+plt.xticks(rotation=0)
+plt.show()
+
+# confusion matrix of best model
+best_name = max(optimized, key=lambda n: accuracy_score(y_test, optimized[n].predict(X_test)))
+best_pred = optimized[best_name].predict(X_test)
+cm = confusion_matrix(y_test, best_pred)
+
+plt.figure(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",
+            xticklabels=wine.target_names, yticklabels=wine.target_names)
+plt.title("Confusion Matrix - " + best_name)
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+print("Best model on test set:", best_name)
